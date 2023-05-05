@@ -1,0 +1,11 @@
+build/
+libs/
+gmres_test
+lapack_test
+main
+.cache/
+main
+thread.cpp
+*.ipynb
+.ipynb_checkpoints/
+main_flexiblas
