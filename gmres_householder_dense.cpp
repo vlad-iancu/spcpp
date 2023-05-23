@@ -2,8 +2,8 @@
 
 #include <openblas/cblas.h>
 #include <openblas/lapack.h>
+
 #include <iostream>
-#include <openblas/lapacke.h>
 #include <cmath>
 
 using namespace spcpp;
@@ -90,46 +90,49 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 	real *x = new real[n]();
 	real *zeros = new real[n]();
 	real *w = new real[n]();
+	real *w_ = new real[n]();
 	real *v_ = new real[n]();
-	real *Pj = new real[n * n]();
-
+	real *w_nnz;
 	//TODO output does not match with correct python code, fix this!
 	for(i32 j = 0; j < m + 1; ++j)
 	{
 		// x = z
-		cblas_dcopy(n, z, 1, x, 1);
+		//cblas_dcopy(n, z, 1, x, 1);
 		
 		//beta = sign(x[j]) * norm(x[j:])
 		i32 nnz = n - j;
-		real beta = sgn(x[j]) * cblas_dnrm2(nnz, x + j, 1);
+		real beta = sgn(z[j]) * cblas_dnrm2(nnz, z + j, 1);
+		w_nnz = w + j;	
 
 		//w = zeros((n,))
 		cblas_dcopy(n, zeros, 1, w, 1);
 
 		//w[j:] = x[j:]
-		cblas_dcopy(nnz, x + j, 1, w + j, 1);
+		cblas_dcopy(nnz, z + j, 1, w_nnz, 1);
 		
 		//w[j] = beta + x[j]
-		w[j] = beta + x[j];
+		w[j] = beta + z[j];
 
 		//w = w / norm(w)
-		real wnorm = cblas_dnrm2(nnz, w + j, 1);
-		cblas_dscal(nnz, 1.0 / wnorm, w + j, 1);
+		real wnorm = cblas_dnrm2(nnz, w_nnz, 1);
+		cblas_dscal(nnz, 1.0 / wnorm, w_nnz, 1);
 
 		//W[:, j] = w 
-		cblas_dcopy(n, w, 1, W + (n * j), 1);
+		cblas_dcopy(nnz, w_nnz, 1, &W[n * j + j], 1);
 		
 		//print_vector("w", w, n);
 		//print_vector("z", z, n);
 		
 		//H[:, j] = x - (2 * inner(w, x)) * w
-		real wdotx = cblas_ddot(n, x, 1, w, 1);
+		real wdotx = cblas_ddot(nnz, &z[j], 1, w_nnz, 1);
 
 		//Copies x into H[:, j] and then does y = a * x + y
 		//where y = H[:, j] aka x, a = -2 * wdotx, x = w
 		//at the end there is 
-		cblas_dcopy(n, x, 1, H + (n * j), 1);
-		cblas_daxpy(n, -2 * wdotx, w, 1, H + (n * j), 1);
+		//TODO See where we have zeros so we can make algorithm more efficient
+		cblas_dcopy(j, z, 1, &H[n * j], 1);
+		cblas_dcopy(nnz, &z[j], 1, &H[n * j + j], 1);
+		cblas_daxpy(nnz, -2 * wdotx, w_nnz, 1, &H[n * j + j], 1);
 
 
 		//print_matrix("H", H, n, m + 1);
@@ -140,25 +143,17 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 			beta_ = H[0];
 		}
 
-		//Pj = identity(n) - 2 * outer(w, w)
-		// Applies dger A := alpha * x * y^T + A
-		// where In gets copied into Pj and
-		// A = Pj, alpha = -2, x = w, y = w
-		// and we have Pj = -2 * w*w^T + Pj
+		// w_ = P @ w
+		// P = P - 2 * outer(w_, w)
+		// v = P[:, j]
+		// dgemv y := alpha * A * x + beta * y
+		// alpha = 1.0, A = P[:, j:], x = w[j:], y = w_, beta = 0
+		// dger A := alpha * x * y^T + A
+		// A = P, alpha = -2.0, x = w, y = A
+		cblas_dgemv(CblasColMajor, CblasNoTrans, n, nnz, 1.0, &P[n * j], n, w_nnz, 1, 0.0, w_, 1);
+		cblas_dger(CblasColMajor, n, nnz, -2.0, w_, 1, w_nnz, 1, &P[n * j], n);
+		cblas_dcopy(n, &P[n * j], 1, v, 1);
 		
-		cblas_dcopy(n * n, In, 1, Pj, 1);
-		cblas_dger(CblasColMajor, n, n, -2.0, w, 1, w, 1, Pj, n);
-		
-		//v = matmul(P, Pj)[:, j]
-		// dgemv
-		// y = alpha * A * x + beta * y
-		// where y = v, A = P, alpha = 1.0, x = Pj[:, j], beta = 0.0
-		cblas_dgemv(CblasColMajor, CblasNoTrans, n, n, 1.0, P, n, Pj + (n * j), 1, 0.0, v, 1);
-		//P = matmul(P, Pj)
-		//dgemm C := alpha * A * B + beta * C
-		//C = temp, alpha = 1.0, A = P, B = Pj, beta = 0.0
-		cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n, n, n, 1.0, P, n, Pj, n, 0.0, temp, n);
-		cblas_dcopy(n * n, temp, 1, P, 1);
 		if(j <= m)
 		{
 			//x = matmul(P_, v)
@@ -195,8 +190,7 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 	real *Hm = H + n;
 	real *ym = new real[m + 1]();
 	ym[0] = beta_;
-	//cblas_dcopy(n, b, 1, ym, 1);
-	//LAPACKE_dgels(LAPACK_COL_MAJOR, 'N', m, m + 1, 1, Hm, n, ym, 1);
+	// Use dlasr in order to implement plane rotations for lstsq on Hm matrix	
 	{
 		char trans = 'N';
 		int nrhs = 1;
@@ -213,7 +207,6 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 		delete[] work;
 		
 	}
-	//TODO Continue after lstsq
 	
 	//z = np.zeros((n,))
 	cblas_dcopy(n, zeros, 1, z, 1);
@@ -251,7 +244,7 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 	delete[] x; 
 	delete[] zeros; 
 	delete[] w; 
+	delete[] w_;
 	delete[] v_; 
-	delete[] Pj; 
 	delete[] ym;
 }
