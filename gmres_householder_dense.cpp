@@ -2,6 +2,7 @@
 
 #include <openblas/cblas.h>
 #include <openblas/lapack.h>
+#include <openblas/lapacke.h>
 
 #include <iostream>
 #include <cmath>
@@ -43,12 +44,22 @@ void print_matrix(const std::string name, real *A, i32 m, i32 n)
 		std::cout << std::endl;
 		std::cout << std::string(prefix, ' ');
 	}
+	
 	std::getchar();
 }
 
 constexpr real alpha = 0.0;
 constexpr real beta = 1.0;
 constexpr char id = 'I';
+
+//TODO Use this function
+void rotate(real *a, real *b, real c, real s)
+{
+	real a1 = c * (*a) + s * (*b);
+	real b1 = -s * (*a) + c * (*b);
+	*a = a1;
+	*b = b1;
+}
 
 void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 {
@@ -93,7 +104,6 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 	real *w_ = new real[n]();
 	real *v_ = new real[n]();
 	real *w_nnz;
-	//TODO output does not match with correct python code, fix this!
 	for(i32 j = 0; j < m + 1; ++j)
 	{
 		// x = z
@@ -129,7 +139,6 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 		//Copies x into H[:, j] and then does y = a * x + y
 		//where y = H[:, j] aka x, a = -2 * wdotx, x = w
 		//at the end there is 
-		//TODO See where we have zeros so we can make algorithm more efficient
 		cblas_dcopy(j, z, 1, &H[n * j], 1);
 		cblas_dcopy(nnz, &z[j], 1, &H[n * j + j], 1);
 		cblas_daxpy(nnz, -2 * wdotx, w_nnz, 1, &H[n * j + j], 1);
@@ -188,25 +197,47 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 
 	//Hm = H[:m + 1, 1:m + 1]
 	real *Hm = H + n;
+	real *g = new real[m + 1]();
 	real *ym = new real[m + 1]();
 	ym[0] = beta_;
-	// Use dlasr in order to implement plane rotations for lstsq on Hm matrix	
+	g[0] = beta_;
+
+	real denom;
+	real si = 0.0;
+	real ci = 1.0;
+	real hi;
+	real hii;
+
+	//Here we apply Givens orthogonal transformations on the Hessenberg matrix Hm
+	//At each step, we construct the Givens rotation so that the non-zero element below the main
+	//diagonal is zeroed out
+	//in order to obtain an upper triangular system which is later solved with dtrtrs
+	for(int i = 0; i < m; ++i)
 	{
-		char trans = 'N';
-		int nrhs = 1;
-		int ldb = 1;
-		i32 m_ = m + 1;
-		i32 lwork = -1;
-		i32 info;
-		double wkopt;
-		double *work;
-		LAPACK_dgels(&trans, &m_, &m, &nrhs, Hm, &n, ym, &m_, &wkopt, &lwork, &info);
-		lwork = (int)wkopt;
-		work = new double[lwork];
-		LAPACK_dgels(&trans, &m_, &m, &nrhs, Hm, &n, ym, &m_, work, &lwork, &info);
-		delete[] work;
-		
+
+		hi = Hm[n * i + i];
+		hii = Hm[n * i + i + 1];
+		denom = std::sqrt( std::pow(hi, 2) + std::pow(hii, 2)  );
+		si = hii / denom;
+		ci = hi / denom;
+
+		rotate(&Hm[n * i + i], &Hm[n * i + i + 1], ci, si);
+		for(int j = i + 1; j < m; ++j)
+		{
+			rotate(&Hm[n * j + i], &Hm[n * j + i + 1], ci, si);	
+		}
+		rotate(&g[i], &g[i + 1], ci, si);
 	}
+	char uplo = 'U';
+	char trans = 'N';
+	char diag = 'N';
+	i32 m_ = m + 1;
+	i32 nrhs = 1;
+	i32 info;
+	
+	//ym = solve(Hm[:m, :], g[:m])
+	LAPACK_dtrtrs(&uplo, &trans, &diag, &m, &nrhs, Hm, &n, g, &m, &info);
+	cblas_dcopy(m_, g, 1, ym, 1);
 	
 	//z = np.zeros((n,))
 	cblas_dcopy(n, zeros, 1, z, 1);
@@ -218,13 +249,12 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 		x[j] = z[j] + ym[j];
 
 		//z = x - ((2 * inner(w, x))) * w
-		//Copy x into z (easy)
+		//Copy x into z 
 		//then daxpy
 		//y := a * x + y
 		//y = z, a = -2 * wdotx, x = w
 		cblas_dcopy(n, x, 1, z, 1);
 		wdotx = cblas_ddot(n, W + (n * j), 1, x, 1);
-		
 		cblas_daxpy(n, -2 * wdotx, W + (n * j), 1, z, 1);
 	}
 	
@@ -246,5 +276,6 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 	delete[] w; 
 	delete[] w_;
 	delete[] v_; 
+	delete[] g;
 	delete[] ym;
 }
