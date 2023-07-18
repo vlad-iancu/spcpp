@@ -14,7 +14,7 @@ real inline sgn(real v)
 	return (v > 0) - (v < 0);
 }
 
-void print_vector(const std::string name, real *v, i32 n)
+static void print_vector(const std::string name, real *v, i32 n)
 {
 	std::cout << name << "(" << n << ")" <<  " = [ ";
 	for(i32 i = 0; i < n; ++i)
@@ -25,7 +25,7 @@ void print_vector(const std::string name, real *v, i32 n)
 	std::getchar();
 }
 
-void print_matrix(const std::string name, real *A, i32 m, i32 n)
+static void print_matrix(const std::string name, real *A, i32 m, i32 n)
 {
 	std::cout << name << " = ";
 	i32 prefix = name.length() + 3;
@@ -71,7 +71,6 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 
 	// W = np.zeros((n, m + 1))
 	real *W = new real[n * (m + 1)]();
-
 	
 	// r0 = b - matmul(A, x0)
 	real *r0 = new real[n];
@@ -143,7 +142,6 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 		cblas_dcopy(nnz, &z[j], 1, &H[n * j + j], 1);
 		cblas_daxpy(nnz, -2 * wdotx, w_nnz, 1, &H[n * j + j], 1);
 
-
 		//print_matrix("H", H, n, m + 1);
 
 		if(j == 0)
@@ -195,6 +193,8 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 		}
 	}
 
+	print_matrix("H", H, n, m + 1);
+	print_matrix("W", W, n, m + 1);
 	//Hm = H[:m + 1, 1:m + 1]
 	real *Hm = H + n;
 	real *g = new real[m + 1]();

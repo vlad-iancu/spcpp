@@ -1,12 +1,22 @@
 [
 {
   "directory": "/home/iancu/project/build",
-  "command": "/usr/bin/c++  -I/home/iancu/project  -o CMakeFiles/spcpp.dir/gmres_householder_dense.cpp.o -c /home/iancu/project/gmres_householder_dense.cpp",
+  "command": "/usr/bin/c++  -I/home/iancu/project -fopenmp -o CMakeFiles/spcpp.dir/gmres_householder_dense.cpp.o -c /home/iancu/project/gmres_householder_dense.cpp",
   "file": "/home/iancu/project/gmres_householder_dense.cpp"
 },
 {
   "directory": "/home/iancu/project/build",
-  "command": "/usr/bin/c++  -I/home/iancu/project  -o CMakeFiles/gmres_test.dir/gmres_test.cpp.o -c /home/iancu/project/gmres_test.cpp",
+  "command": "/usr/bin/c++  -I/home/iancu/project -fopenmp -o CMakeFiles/spcpp.dir/gmres_householder_sparse.cpp.o -c /home/iancu/project/gmres_householder_sparse.cpp",
+  "file": "/home/iancu/project/gmres_householder_sparse.cpp"
+},
+{
+  "directory": "/home/iancu/project/build",
+  "command": "/usr/bin/c++  -I/home/iancu/project -fopenmp -o CMakeFiles/gmres_test.dir/gmres_test.cpp.o -c /home/iancu/project/gmres_test.cpp",
   "file": "/home/iancu/project/gmres_test.cpp"
+},
+{
+  "directory": "/home/iancu/project/build",
+  "command": "/usr/bin/c++  -I/home/iancu/project -fopenmp -o CMakeFiles/gmres_sparse_test.dir/gmres_sparse_test.cpp.o -c /home/iancu/project/gmres_sparse_test.cpp",
+  "file": "/home/iancu/project/gmres_sparse_test.cpp"
 }
 ]
