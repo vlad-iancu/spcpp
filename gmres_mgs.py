@@ -95,6 +95,8 @@ for i in range(m):
    Hm_ = matmul(rot, Hm_)
    #print(f"Hm = {Hm_}")
    #input()
+   print(f"Hm(iter {i}) = {Hm_}")
+   input()
    g = matmul(rot, g)
    #print(f"g = {g}")
    #input()

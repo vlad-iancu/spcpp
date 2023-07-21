@@ -229,7 +229,7 @@ namespace spcpp
 			//print_vector("V[:, j + 1]", n, &V[n * (j + 1)], 1);
 		}
 		aoclsparse_create_mat_descr(&H_desc);
-		aoclsparse_create_dcsr(H_mat, aoclsparse_index_base_zero, m + 1, n, H_nnz, H_row, H_col, H_val);
+		aoclsparse_create_dcsr(H_mat, aoclsparse_index_base_zero, m + 1, m, H_nnz, H_row, H_col, H_val);
 		/* i32 Q_NNZ = n + 2;
 		i32 Q_nnz = n + 2;
 		real *Q_val = new real[Q_NNZ]();
@@ -270,38 +270,47 @@ namespace spcpp
 		real *g = new real[m + 1]();
 		real *aux = new real[m + 1]();
 		g[0] = beta_;
+		real *temp_val = nullptr;
+		i32 *temp_col  = nullptr;
+		i32 *temp_row  = nullptr;
+		aoclsparse_matrix temp_mat = nullptr;
+		i32 Q_NNZ = n + 2;
+		i32 Q_nnz = n + 2;
+		real *Q_val = new real[Q_NNZ]();
+		i32 *Q_col = new i32[Q_NNZ]();
+		i32 *Q_row = new i32[m + 2]();
+		aoclsparse_mat_descr Q_desc;
+		aoclsparse_matrix Q_mat;
+		aoclsparse_create_mat_descr(&Q_desc);
+		aoclsparse_create_dcsr(
+				Q_mat, 
+				aoclsparse_index_base::aoclsparse_index_base_zero, 
+				m + 1, 
+				m + 1, 
+				Q_nnz, 
+				Q_row,
+				Q_col,
+				Q_val);
 		for(i32 k = 0; k < m; ++k)
 		{
 			//val1 = H[i, i]
 			//val2 = H[i + 1, i]
-			real *temp_val = nullptr;
-			i32 *temp_col  = nullptr;
-			i32 *temp_row  = nullptr;
-			aoclsparse_matrix temp_mat = nullptr;
+			temp_val = nullptr;
+			temp_col  = nullptr;
+			temp_row  = nullptr;
+			temp_mat = nullptr;
 
 			//val1 = H_val[H_row[k] + k - std::max(0, k - 1)];
 			//val2 = H_val[H_row[k + 1] + k - std::max(0, k)];
 			val1 = get_element(H_val, H_col, H_row, m + 1, m, H_NNZ, k, k);
 			val2 = get_element(H_val, H_col, H_row, m + 1, m, H_NNZ, k + 1, k);
 
-			i32 Q_NNZ = n + 2;
-			i32 Q_nnz = n + 2;
-			real *Q_val = new real[Q_NNZ]();
-			i32 *Q_col = new i32[Q_NNZ]();
-			i32 *Q_row = new i32[m + 2]();
-			aoclsparse_mat_descr Q_desc;
-			aoclsparse_matrix Q_mat;
+			std::cout << "val1 = " << val1 << std::endl;
+			std::cout << "val2 " << val2 << std::endl;
+			getchar();
+			Q_NNZ = n + 2;
+			Q_nnz = n + 2;
 			create_sparse_givens(Q_val, Q_col, Q_row, m + 1, k, val1, val2);
-			aoclsparse_create_mat_descr(&Q_desc);
-			aoclsparse_create_dcsr(
-					Q_mat, 
-					aoclsparse_index_base::aoclsparse_index_base_zero, 
-					m + 1, 
-					m + 1, 
-					Q_nnz, 
-					Q_row,
-					Q_col,
-					Q_val);
 			alpha = 1.0;
 			beta = 0.0;
 			
@@ -319,10 +328,25 @@ namespace spcpp
 					&beta,
 					aux);
 			cblas_dcopy(m + 1, aux, 1, g, 1);
-			aoclsparse_create_mat_descr(&Q_desc);
+			//aoclsparse_create_mat_descr(&Q_desc);
 			//TODO destroy matrix descriptor and fix
 			//print_sparse_matrix("Q", m + 1, m + 1, Q_val, Q_col, Q_row);
 			//std::cout << "Before matmul" << std::endl;
+
+			real *tempHVal = nullptr;
+			i32 *tempHCol = nullptr;
+			i32 *tempHRow = nullptr;
+			aoclsparse_index_base tempHBase;
+			i32 tempHLines = m + 1;
+			i32 tempHCols = m;
+			i32 tempHNNZ;
+			aoclsparse_export_mat_csr(H_mat, &tempHBase, &tempHLines, &tempHCols, &tempHNNZ, &tempHRow, &tempHCol, (void**)&tempHVal);
+			std::cout << tempHLines << " " << tempHCols << std::endl;
+			getchar();
+			print_vector("ActualHVals", tempHNNZ, tempHVal, 1);
+			print_vector("ActualHCols", tempHNNZ, tempHCol, 1);
+			print_vector("ActualHRows", tempHLines + 1, tempHRow, 1);
+			print_sparse_matrix("ActualH", tempHLines, tempHCols, tempHVal, tempHCol, tempHRow);
 			aoclsparse_status status = aoclsparse_dcsr2m(
 					aoclsparse_operation_none,
 					Q_desc,
@@ -358,36 +382,70 @@ namespace spcpp
 			//print_vector("temp_col", temp_nnz, temp_col, 1);
 			//print_vector("temp_row", m + 2, temp_row, 1);
 			//print_sparse_matrix("H", m + 1, m, H_val, H_col, H_row);
-			aoclsparse_destroy_mat_descr(H_desc);
-			aoclsparse_destroy(H_mat);
-			H_NNZ = temp_nnz;
-			H_nnz = temp_nnz;
-			H_val = new real[temp_nnz];
-			H_col = new i32[temp_nnz];
-			H_row = new i32[m + 2];
+			//aoclsparse_destroy_mat_descr(H_desc);
+			//aoclsparse_destroy(H_mat);
 
-			cblas_dcopy(H_NNZ, temp_val, 1, H_val, 1);
-			std::memcpy(H_col, temp_col, H_NNZ * sizeof(i32));
-			std::memcpy(H_row, temp_row, (m + 2) * sizeof(i32));
-			H_mat = nullptr;
+			// Sum of arithmetic progression:
+			// ( n (a1 + an) ) / 2
+			// a1 = m - k
+			// an = m
+			// n = k + 1
+			print_sparse_matrix("temp", m + 1, m, temp_val, temp_col, temp_row);
+			i32 altered = ((k + 1) * (2 * m - k)) / 2;
+			std::cout << "H_NNZ = " << H_NNZ << std::endl;
+			getchar();
+			//H_nnz = temp_nnz;
+			//H_val = new real[temp_nnz];
+			//H_col = new i32[temp_nnz];
+			//H_row = new i32[m + 2];
+
+			i32 ptr = 0;
+			i32 pos = 0;
+			while(ptr < temp_nnz)
+			{
+				while (std::abs(temp_val[ptr]) <= 1e-5) 
+				{
+					++ptr;
+				}
+				H_val[pos] = temp_val[ptr];
+				H_col[pos] = temp_col[ptr];
+				++pos;
+				++ptr;
+			}
+			for(i32 i = k + 2; i < m + 2; ++i)
+			{
+				std::cout << "Decreasing row " << i << std::endl;
+				getchar();
+				--H_row[i];
+			}
+			H_NNZ = pos;
+			print_vector("H_val", H_NNZ, H_val, 1);
+			print_vector("H_col", H_NNZ, H_col, 1);
+			print_vector("H_row", m + 2, H_row, 1);
+			print_sparse_matrix("H", m + 1, m, H_val, H_col, H_row);
+			aoclsparse_create_dcsr(H_mat, aoclsparse_index_base_zero, m + 1, m, H_NNZ, H_row, H_col, H_val);
+			//cblas_dcopy(H_NNZ, temp_val, 1, H_val, 1);
+			//std::memcpy(H_col, temp_col, H_NNZ * sizeof(i32));
+			//std::memcpy(H_row, temp_row, (m + 2) * sizeof(i32));
+			//H_mat = nullptr;
 		
-			aoclsparse_create_dcsr(
-					H_mat, 
-					aoclsparse_index_base_zero, 
-					m + 1, 
-					m,
-					temp_nnz,
-					H_row, 
-					H_col,
-					H_val);
-			aoclsparse_create_mat_descr(&H_desc);
+			//aoclsparse_create_dcsr(
+			//		H_mat, 
+			//		aoclsparse_index_base_zero, 
+			//		m + 1, 
+			//		m,
+			//		temp_nnz,
+			//		H_row, 
+			//		H_col,
+			//		H_val);
+			//aoclsparse_create_mat_descr(&H_desc);
 			//print_sparse_matrix("H", m + 1, m, H_val, H_col, H_row);
 			//print_vector("H_val", H_NNZ, H_val, 1);
 			//print_vector("H_col", H_NNZ, H_col, 1);
 			//print_vector("H_row", m + 2, H_row, 1);
-			aoclsparse_destroy(temp_mat);
-			aoclsparse_destroy(Q_mat);
-			aoclsparse_destroy_mat_descr(Q_desc);
+			//aoclsparse_destroy(temp_mat);
+			//aoclsparse_destroy(Q_mat);
+			//aoclsparse_destroy_mat_descr(Q_desc);
 		}
 		//print_vector("H_col", H_NNZ, H_col, 1);
 		//print_vector("H_row", m + 2, H_row, 1);
@@ -496,7 +554,7 @@ namespace spcpp
 				xm,
 				&beta,
 				r0);
-		//std::cout << cblas_dnrm2(n, r0, 1) << std::endl;
+		std::cout << cblas_dnrm2(n, r0, 1) << std::endl;
 		cblas_dcopy(n, xm, 1, x, 1);
 
 		delete [] H;
