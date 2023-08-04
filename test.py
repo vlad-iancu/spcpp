@@ -14,6 +14,23 @@ A = np.array([
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 1, 0, 0, 0, 0, 5, 0, 0, 0
 ])
+b = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+A = np.reshape(A, (10, 10))
+print(f"A = {A}")
+input()
+x = np.array([-328,
+     -274.75,
+-5.31859e+16,
+        2195,
+          -6,
+         888,
+          80,
+ 1.19668e+17,
+       -1278,
+       -9256,])
+
+print(f"Residual is {np.linalg.norm(b - np.matmul(A, x))}")
+input()
 H = np.array(
 	[
 		11.006020, 2.555622, 0.472294, -1.768089,
@@ -27,4 +44,3 @@ g = np.array([ 10.8634, 3.39497, 0.397205, 2.74275])
 H = np.reshape(H, (4, 4))
 print(H)
 print((np.matmul(H, y)) - g)
-A = np.reshape(A, (10, 10))

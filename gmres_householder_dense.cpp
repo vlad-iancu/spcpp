@@ -53,7 +53,7 @@ constexpr real beta = 1.0;
 constexpr char id = 'I';
 
 //TODO Use this function
-void rotate(real *a, real *b, real c, real s)
+static void rotate(real *a, real *b, real c, real s)
 {
 	real a1 = c * (*a) + s * (*b);
 	real b1 = -s * (*a) + c * (*b);

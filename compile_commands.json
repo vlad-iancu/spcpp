@@ -6,8 +6,13 @@
 },
 {
   "directory": "/home/iancu/project/build",
-  "command": "/usr/bin/c++  -I/home/iancu/project -fopenmp -o CMakeFiles/spcpp.dir/gmres_householder_sparse.cpp.o -c /home/iancu/project/gmres_householder_sparse.cpp",
-  "file": "/home/iancu/project/gmres_householder_sparse.cpp"
+  "command": "/usr/bin/c++  -I/home/iancu/project -fopenmp -o CMakeFiles/spcpp.dir/gmres_mgs_sparse.cpp.o -c /home/iancu/project/gmres_mgs_sparse.cpp",
+  "file": "/home/iancu/project/gmres_mgs_sparse.cpp"
+},
+{
+  "directory": "/home/iancu/project/build",
+  "command": "/usr/bin/c++  -I/home/iancu/project -fopenmp -o CMakeFiles/spcpp.dir/cg_dense.cpp.o -c /home/iancu/project/cg_dense.cpp",
+  "file": "/home/iancu/project/cg_dense.cpp"
 },
 {
   "directory": "/home/iancu/project/build",
@@ -18,5 +23,10 @@
   "directory": "/home/iancu/project/build",
   "command": "/usr/bin/c++  -I/home/iancu/project -fopenmp -o CMakeFiles/gmres_sparse_test.dir/gmres_sparse_test.cpp.o -c /home/iancu/project/gmres_sparse_test.cpp",
   "file": "/home/iancu/project/gmres_sparse_test.cpp"
+},
+{
+  "directory": "/home/iancu/project/build",
+  "command": "/usr/bin/c++  -I/home/iancu/project/eigen/eigen-3.4.0/unsupported/Eigen  -o CMakeFiles/eigentest.dir/eigen_test.cpp.o -c /home/iancu/project/eigen_test.cpp",
+  "file": "/home/iancu/project/eigen_test.cpp"
 }
 ]

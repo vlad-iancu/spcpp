@@ -9,3 +9,5 @@ thread.cpp
 *.ipynb
 .ipynb_checkpoints/
 main_flexiblas
+tnt/
+eigen/
