@@ -1,8 +1,7 @@
-#include <cg_dense.hpp>
+#include <cg_sparse.hpp>
 
 #include <openblas/cblas.h>
 #include <openblas/lapack.h>
-
 #include <iostream>
 #include "def.hpp"
 
@@ -49,7 +48,7 @@ namespace spcpp
 		std::getchar();
 	}
 
-	void cg_dense(real *A, real *b, i32 n, i32 iter, real *x, real tol, i32 maxiter)
+	void cg_sparse(aoclsparse_mat_descr A_desc, aoclsparse_matrix &A_mat, i32 A_nnz, real *A_val, i32 *A_col, i32 *A_row, i32 n, i32 m, real *b, real *x, i32 maxiter, real tol)
 	{
 		
 		real *r = new real[n]();
@@ -62,12 +61,26 @@ namespace spcpp
 		real alpha;
 		real beta;
 		i32 iterations = 0;
+
+		real alpha_;
+		real beta_;
 		do
 		{
 
 			//r0 = b - Ax0
+			alpha_ = -1.0;
+			beta_ = 1.0;
 			cblas_dcopy(n, b, 1, r, 1);
-			cblas_dgemv(CblasColMajor, CblasNoTrans, n, n, -1.0, A, n, x, 1, 1.0, r, 1);
+			aoclsparse_dcsrmv(
+					aoclsparse_operation_none, 
+					&alpha_, 
+					n, n, 
+					A_nnz, 
+					A_val, A_col, A_row,
+					A_desc, 
+					x, 
+					&beta_, 
+					r);
 			/*
 			if(is_tridiag)
 			{
@@ -85,11 +98,26 @@ namespace spcpp
 			res = cblas_dnrm2(n, r, 1);
 			//std::cout << "res = " << res << std::endl;
 			//getchar();
-			for(i32 j = 0; j < iter; ++j)
+			for(i32 j = 0; j < m; ++j)
 			{
 				// alpha = (r, r) / (Ap, p)
 				// dgemv = alpha * A * x + beta * y
 				// alpha = 1.0, beta = 0.0, A = A, x = p, y = Ap
+
+				alpha_ = 1.0;
+				beta_ = 0.0;
+				aoclsparse_dcsrmv(
+						aoclsparse_operation_none,
+						&alpha_,
+						n, n,
+						A_nnz, 
+						A_val, A_col, A_row,
+						A_desc,
+						p,
+						&beta_,
+						Ap);
+
+				/*
 				cblas_dgemv(
 						CblasColMajor,
 						CblasNoTrans,
@@ -104,6 +132,7 @@ namespace spcpp
 						Ap,
 						1
 				);
+				*/
 				//cblas_dcopy(n, temp, 1, Ap, 1);
 				rdotr = cblas_ddot(n, r, 1, r, 1);
 				alpha = rdotr / cblas_ddot(n, Ap, 1, p, 1);
@@ -127,7 +156,7 @@ namespace spcpp
 			//if(iterations % 100 == 0)
 			//{
 			std::cout << "iteration = " << iterations << " res = " << res << std::endl;
-				//getchar();
+			//getchar();
 			//}
 			
 			//std::cout << "iterations = " << iterations << " maxiter = " << maxiter << " res = " << res << " tol = " << tol << std::endl;
@@ -135,7 +164,7 @@ namespace spcpp
 			//std::cout << "res > tol " << (res > tol) << std::endl;
 			//std::cout << "(iterations < maxiter) && (res > tol) " << ((iterations < maxiter) && (res > tol)) << std::endl;
 		}
-		while(res > tol && (iterations < maxiter || maxiter == 0));
+		while(res > tol && iterations < maxiter);
 		std::cout << res << std::endl;
 		//getchar();
 	}

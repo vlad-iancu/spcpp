@@ -98,14 +98,14 @@ int main()
 	}
 	//std::cout << A << std::endl;
 	std::cout << A.nonZeros() << std::endl;
-	//DGMRES<SparseMatrix<double>> solver(A);
-	GMRES<SparseMatrix<double> > solver;
+	DGMRES<SparseMatrix<double>> solver(A);
+	//GMRES<SparseMatrix<double> > solver;
 	std::cout << "Solving system..." << std::endl;
 	solver.compute(A);
 	x = solver.solve(b);
 	solver.set_restart(60);
-	std::cout << "Restart is: " << solver.get_restart() << std::endl;
-	//std::cout << "Restart is: " << solver.restart() << std::endl;
+	//std::cout << "Restart is: " << solver.get_restart() << std::endl;
+	std::cout << "Restart is: " << solver.restart() << std::endl;
 	getchar();
 	std::cout << "#iterations:     " << solver.iterations() << std::endl;
 	std::cout << "estimated error: " << solver.error()      << std::endl;

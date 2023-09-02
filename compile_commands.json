@@ -16,8 +16,23 @@
 },
 {
   "directory": "/home/iancu/project/build",
+  "command": "/usr/bin/c++  -I/home/iancu/project -fopenmp -o CMakeFiles/spcpp.dir/cg_sparse.cpp.o -c /home/iancu/project/cg_sparse.cpp",
+  "file": "/home/iancu/project/cg_sparse.cpp"
+},
+{
+  "directory": "/home/iancu/project/build",
   "command": "/usr/bin/c++  -I/home/iancu/project -fopenmp -o CMakeFiles/gmres_test.dir/gmres_test.cpp.o -c /home/iancu/project/gmres_test.cpp",
   "file": "/home/iancu/project/gmres_test.cpp"
+},
+{
+  "directory": "/home/iancu/project/build",
+  "command": "/usr/bin/c++  -I/home/iancu/project -fopenmp -o CMakeFiles/cg_dense_test.dir/cg_dense_test.cpp.o -c /home/iancu/project/cg_dense_test.cpp",
+  "file": "/home/iancu/project/cg_dense_test.cpp"
+},
+{
+  "directory": "/home/iancu/project/build",
+  "command": "/usr/bin/c++  -I/home/iancu/project -fopenmp -o CMakeFiles/cg_sparse_test.dir/cg_sparse_test.cpp.o -c /home/iancu/project/cg_sparse_test.cpp",
+  "file": "/home/iancu/project/cg_sparse_test.cpp"
 },
 {
   "directory": "/home/iancu/project/build",
@@ -28,5 +43,20 @@
   "directory": "/home/iancu/project/build",
   "command": "/usr/bin/c++  -I/home/iancu/project/eigen/eigen-3.4.0/unsupported/Eigen  -o CMakeFiles/eigentest.dir/eigen_test.cpp.o -c /home/iancu/project/eigen_test.cpp",
   "file": "/home/iancu/project/eigen_test.cpp"
+},
+{
+  "directory": "/home/iancu/project/build",
+  "command": "/usr/bin/c++    -o CMakeFiles/listestgmres.dir/lis_test_gmres.cpp.o -c /home/iancu/project/lis_test_gmres.cpp",
+  "file": "/home/iancu/project/lis_test_gmres.cpp"
+},
+{
+  "directory": "/home/iancu/project/build",
+  "command": "/usr/bin/c++   -fopenmp -o CMakeFiles/listestcg.dir/lis_test_cg.cpp.o -c /home/iancu/project/lis_test_cg.cpp",
+  "file": "/home/iancu/project/lis_test_cg.cpp"
+},
+{
+  "directory": "/home/iancu/project/build",
+  "command": "/usr/bin/c++   -fopenmp -o CMakeFiles/listestcgsparse.dir/lis_test_cg_sparse.cpp.o -c /home/iancu/project/lis_test_cg_sparse.cpp",
+  "file": "/home/iancu/project/lis_test_cg_sparse.cpp"
 }
 ]

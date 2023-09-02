@@ -61,7 +61,7 @@ static void rotate(real *a, real *b, real c, real s)
 	*b = b1;
 }
 
-void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
+void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0, i32 iter, i32 maxiter)
 {
 	// v = np.zeros((n,))
 	real *v = new real[n]();
@@ -109,38 +109,39 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 		//cblas_dcopy(n, z, 1, x, 1);
 		
 		//beta = sign(x[j]) * norm(x[j:])
+		
 		i32 nnz = n - j;
-		real beta = sgn(z[j]) * cblas_dnrm2(nnz, z + j, 1);
+		real beta = sgn(z[j]) * cblas_dnrm2(nnz, z + j, 1); // theta(n - j)
 		w_nnz = w + j;	
 
 		//w = zeros((n,))
-		cblas_dcopy(n, zeros, 1, w, 1);
+		cblas_dcopy(n, zeros, 1, w, 1); // theta(n)
 
 		//w[j:] = x[j:]
-		cblas_dcopy(nnz, z + j, 1, w_nnz, 1);
+		cblas_dcopy(nnz, z + j, 1, w_nnz, 1); //theta(n - j)
 		
 		//w[j] = beta + x[j]
 		w[j] = beta + z[j];
 
 		//w = w / norm(w)
-		real wnorm = cblas_dnrm2(nnz, w_nnz, 1);
-		cblas_dscal(nnz, 1.0 / wnorm, w_nnz, 1);
+		real wnorm = cblas_dnrm2(nnz, w_nnz, 1); //theta(n - j)
+		cblas_dscal(nnz, 1.0 / wnorm, w_nnz, 1); //theta(n - j)
 
 		//W[:, j] = w 
-		cblas_dcopy(nnz, w_nnz, 1, &W[n * j + j], 1);
+		cblas_dcopy(nnz, w_nnz, 1, &W[n * j + j], 1); //theta(n - j)
 		
 		//print_vector("w", w, n);
 		//print_vector("z", z, n);
 		
 		//H[:, j] = x - (2 * inner(w, x)) * w
-		real wdotx = cblas_ddot(nnz, &z[j], 1, w_nnz, 1);
+		real wdotx = cblas_ddot(nnz, &z[j], 1, w_nnz, 1); //theta(n - j)
 
 		//Copies x into H[:, j] and then does y = a * x + y
 		//where y = H[:, j] aka x, a = -2 * wdotx, x = w
 		//at the end there is 
-		cblas_dcopy(j, z, 1, &H[n * j], 1);
-		cblas_dcopy(nnz, &z[j], 1, &H[n * j + j], 1);
-		cblas_daxpy(nnz, -2 * wdotx, w_nnz, 1, &H[n * j + j], 1);
+		cblas_dcopy(j, z, 1, &H[n * j], 1); // theta(j)
+		cblas_dcopy(nnz, &z[j], 1, &H[n * j + j], 1); // theta(n - j)
+		cblas_daxpy(nnz, -2 * wdotx, w_nnz, 1, &H[n * j + j], 1); // theta(n - j)
 
 		//print_matrix("H", H, n, m + 1);
 
@@ -159,7 +160,7 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 		// A = P, alpha = -2.0, x = w, y = A
 		cblas_dgemv(CblasColMajor, CblasNoTrans, n, nnz, 1.0, &P[n * j], n, w_nnz, 1, 0.0, w_, 1);
 		cblas_dger(CblasColMajor, n, nnz, -2.0, w_, 1, w_nnz, 1, &P[n * j], n);
-		cblas_dcopy(n, &P[n * j], 1, v, 1);
+		cblas_dcopy(n, &P[n * j], 1, v, 1); // theta(2 * n * (n - j) + n)
 		
 		if(j <= m)
 		{
@@ -189,12 +190,11 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 			// Applies dger A := alpha * x * y^T + A
 			// A = P_, alpha = -1.0, x = w, y = v_
 			cblas_dger(CblasColMajor, n, n, -1.0, w, 1, v_, 1, P_, n);
+			//theta(3n^2 + 3n)
 
 		}
 	}
 
-	print_matrix("H", H, n, m + 1);
-	print_matrix("W", W, n, m + 1);
 	//Hm = H[:m + 1, 1:m + 1]
 	real *Hm = H + n;
 	real *g = new real[m + 1]();
@@ -278,4 +278,11 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0)
 	delete[] v_; 
 	delete[] g;
 	delete[] ym;
+	/*
+	if(iter < maxiter)
+	{
+		std::cout << "iter = " << iter << std::endl;
+		gmres_householder_dense(A, b, n, m, x0, iter + 1, maxiter);
+	}
+	*/
 }

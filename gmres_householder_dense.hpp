@@ -6,7 +6,7 @@
 namespace spcpp
 {
 
-	void gmres_householder_dense(real *A, real *b, i32 n, i32 iter, real *x);
+	void gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x, i32 iter, i32 maxiter);
 }
 
 #endif

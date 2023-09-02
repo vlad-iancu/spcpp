@@ -71,7 +71,7 @@ namespace spcpp
 		*a = a1;
 		*b = b1;
 	}
-	void gmres_mgs_sparse(aoclsparse_mat_descr A_desc, aoclsparse_matrix &A_mat, i32 A_nnz, real *A_val, i32 *A_col, i32 *A_row, i32 n, i32 m, real *b, real *x, i32 maxiter)
+	void gmres_mgs_sparse(aoclsparse_mat_descr A_desc, aoclsparse_matrix &A_mat, i32 A_nnz, real *A_val, i32 *A_col, i32 *A_row, i32 n, i32 m, real *b, real *x, real tol, i32 maxiter)
 	{
 		//Try to completely abandon plane rotations and use LAPACK least-squares
 		//to see if that is the source of error
@@ -144,7 +144,6 @@ namespace spcpp
 		//i32 *Q_row = new i32[m + 2]();
 		
 		real res = 0;
-		real tol = 1e-1;
 		i32 iter = 0;
 		//////////////////////////////////////////////////
 		
@@ -318,8 +317,8 @@ lapacklstsq:
 					1);
 			
 			cblas_dcopy(n, b, 1, r0, 1);
-			alpha = -1.0;
-			beta = 1.0;
+			alpha = 1.0;
+			beta = -1.0;
 			aoclsparse_dcsrmv(
 					aoclsparse_operation_none,
 					&alpha,
@@ -336,8 +335,12 @@ lapacklstsq:
 			res = cblas_dnrm2(n, r0, 1);
 			cblas_dcopy(n, xm, 1, x, 1);
 			//print_vector("x", n, xm, 1);
-			//std::cout << res << std::endl;
-			//getchar();
+			std::cout << res << std::endl;
+			char c = getchar();
+			if(c == ' ')
+			{
+				break;
+			}
 			iter++;
 		} 
 		while(res > tol && iter < maxiter);

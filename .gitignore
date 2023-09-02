@@ -11,3 +11,5 @@ thread.cpp
 main_flexiblas
 tnt/
 eigen/
+lis/
+example_matrices/

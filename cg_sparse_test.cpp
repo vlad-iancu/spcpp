@@ -1,10 +1,10 @@
-#include <iostream>
-#include <istream>
+#include <aocl_sparse/aoclsparse.h>
+#include <cg_sparse.hpp>
+#include <cstring>
 #include <openblas/cblas.h>
-#include <ostream>
+#include <random>
+#include <iostream>
 #include <fstream>
-#include <gmres_mgs_sparse.hpp>
-
 using namespace spcpp;
 
 template <class I, class T>
@@ -145,133 +145,43 @@ static void print_sparse_matrix(const std::string &name, i32 m, i32 n, real *val
 }
 int main()
 {
-	aoclsparse_matrix mat;
+	//A and B are the same, they are used just to avoid bugs in sparse mm operation
+	aoclsparse_matrix A_mat;
+	aoclsparse_index_base A_base = aoclsparse_index_base_zero;
 	aoclsparse_mat_descr A_desc;
-	//    0 1 2 3 4 5 6 7 8 9
-	// 0  0 0 0 4 0 0 5 0 0 1
-	// 1  0 4 0 0 5 0 7 0 0 0
-	// 2  1 0 0 2 0 7 0 0 8 0
-	// 3  0 6 0 0 0 2 0 0 0 0
-	// 4  0 0 9 0 0 0 3 4 0 3
-	// 5  0 0 0 4 0 0 0 0 7 0
-	// 6  8 0 0 0 0 3 0 0 0 0
-	// 7  0 0 0 0 2 0 0 0 0 0
-	// 8  0 0 0 0 0 0 0 0 0 0
-	// 9  0 1 0 0 0 0 5 0 0 0
-	
-	/*
-	real A_val[] = {
-		4, 5, 1,
-		4, 5, 7,
-		1, 2, 7, 8,
-		6, 2,
-		9, 3, 4, 3,
-		4, 7,
-		8, 3,
-		2,
-
-		1, 5
-	};
-	i32 A_col[] = {
-		3, 6, 9,
-		1, 4, 6,
-		0, 3, 5, 8,
-		1, 5,
-		2, 6, 7, 9,
-		3, 8,
-		0, 5,
-		4,
-
-		1, 6
-	};
-	i32 A_row[] = {
-		0, 3, 6, 10, 12, 16, 18, 20, 21, 21, 23
-	};
-	real b[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-	*/
 	real *A_val;
 	i32 *A_col;
 	i32 *A_row;
-	i32 n = 10;
-	i32 m = 30;
-	i32 nnz = 21;
-	//read_sparse_matrix_mm_format("../example_matrices/example.mtx",n, n, A_val, A_col, A_row, nnz);
-	read_sparse_matrix_mm_format("../example_matrices/thermal1.mtx", n, n, A_val, A_col, A_row, nnz);
-	std::ofstream fout("./spmat.txt");
-	fout << n << " " << n << " " << nnz << std::endl;
-	//std::cout << n << " " << n << " " << nnz << std::endl;
-	/*
-	print_vector("A_val", nnz, A_val, 1);
-	print_vector("A_col", nnz, A_col, 1);
-	print_vector("A_row", n + 1, A_row, 1);
-	print_sparse_matrix("A", n, n, A_val, A_col, A_row);
-	*/
-	for(i32 i = 0; i < nnz; ++i)
+	i32 A_n;
+	i32 A_nnz;
+
+	read_sparse_matrix_mm_format("../example_matrices/t2dal_e.mtx", A_n, A_n, A_val, A_col, A_row, A_nnz);
+	real *x = new real[A_n]();
+	real *b = new real[A_n]();
+
+	for(i32 i = 0; i < A_n; ++i)
 	{
-		fout << A_val[i] << " ";
+		b[i] = (real)(i + 1);
 	}
-	fout << std::endl;
-	for(i32 i = 0; i < nnz; ++i)
-	{
-		fout << A_col[i] << " ";
-	}
-	fout << std::endl;
-	for(i32 i = 0; i < n + 1; ++i)
-	{
-		fout << A_row[i] << " ";
-	}
-	fout << std::endl;
-	real *b = new real[n];
-	//std::cout << "nnz = " << nnz << std::endl;
-	for(i32 i = 0; i < n; ++i)
-	{
-		b[i] = double(i + 1);
-	}
-	//print_vector("A_val", 10, A_val, 1);
-	//print_vector("A_col", 10, A_col, 1);
-	//print_vector("b", 10, b, 1);
-	//getchar();
+	//std::cout << "First element = " << A_val[0] << " Last element = " << A_val[A_nnz - 1] << std::endl;
 	aoclsparse_create_mat_descr(&A_desc);
-	aoclsparse_matrix A_mat;
-	aoclsparse_index_base base = aoclsparse_index_base::aoclsparse_index_base_zero;
-	aoclsparse_create_dcsr(A_mat, base, n, n, nnz, A_row, A_col, A_val);
-	//real *A_dense = new real[n * n]();
-	real *x = new real[n]();
-	//real x[10] = { 0.298839, 0.54889, 0.199792, 0.273519, 0.374394, 0.357441, 0.189931, 0.300435, 0.263805, 0.474547 };
-	/*
-	real x[10] = {
-		-328,
-     -274.75,
--5.31859e+16,
-        2195,
-          -6,
-         888,
-          80,
- 1.19668e+17,
-       -1278,
-       -9256,
-	};
-	*/
-	//aoclsparse_dcsr2dense(n, n, A_desc, A_val, A_row, A_col, A_dense, n, aoclsparse_order::aoclsparse_order_column);
-	//std::cout << "m = " << m << " n = " << n << std::endl;
-	//getchar();
-	i32 iter = 100000;
-	m = 600;
-	gmres_mgs_sparse(A_desc, A_mat, nnz, A_val, A_col, A_row, n, m , b, x, 0.01, iter);
-	std::cout << "Exited gmres" << std::endl;
-	std::ofstream solfile("./sol.txt");
-	for(i32 i = 0;i < n; ++i)
-	{
-		solfile << i << " " << x[i] << std::endl;
-	}
-	//REMOVE THIS PART
-	//real *Adense = new real[n * n];
-	//aoclsparse_dcsr2dense(n, n, A_desc, A_val, A_row, A_col, Adense, n, aoclsparse_order_column);
-	//real *r0 = new real[n];
-	//cblas_dcopy(n, b, 1, r0, 1);
-	//cblas_dgemv(CblasColMajor, CblasNoTrans, n, n, -1.0, Adense, n, x, 1, 1.0, r0, 1);
-	//std::cout << "norm is " << cblas_dnrm2(n, r0, 1) << std::endl;
-	//aoclsparse_destroy_mat_descr(A_desc);
-	//aoclsparse_destroy(mat);
-	return 0;
+	aoclsparse_create_dcsr(
+			A_mat,
+			A_base,
+			A_n,
+			A_n,
+			A_nnz,
+			A_row,
+			A_col,
+			A_val);
+
+	aoclsparse_optimize(A_mat);
+	real tol = 0.01;
+	i32 maxiter = 2000000;
+	i32 m = 700;
+	cg_sparse(A_desc, A_mat, A_nnz, A_val, A_col, A_row, A_n, m, b, x, maxiter, tol);
+
+
+
+	//Finish tomorrow
 }
