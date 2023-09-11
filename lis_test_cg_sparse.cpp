@@ -96,7 +96,7 @@ int main()
 	i32 *A_col;
 	i32 *A_row;
 	i32 nnz;
-	read_sparse_matrix_mm_format("../example_matrices/nos7.mtx", n, n, A_val, A_col, A_row, nnz);
+	read_sparse_matrix_mm_format("../example_matrices/nasa2910.mtx", n, n, A_val, A_col, A_row, nnz);
 
 	//std::cout << "nnz = " << nnz << std::endl;
 	//std::cout << "val[0] = " << A_val[0] << std::endl;
@@ -126,7 +126,7 @@ int main()
 	LIS_SOLVER solver;
 	lis_solver_create(&solver);
 	//lis_solver_set_optionC(solver);
-	std::string optstr = "-i cg -p none -print all -maxiter 10000";
+	std::string optstr = "-i cg -p none -print all -maxiter 100000";
 	char *opt = new char[optstr.size() + 1]; 
 	opt[optstr.size()] = '\0';
 	strncpy(opt, optstr.c_str(), optstr.size());
@@ -143,7 +143,7 @@ int main()
 	LIS_VECTOR temp_vec; lis_vector_create(0, &temp_vec);
 	lis_vector_set_size(temp_vec, 0, n);
 	real norm;
-	lis_solver_get_residualnorm(solver, &norm);
+	//lis_solver_get_residualnorm(solver, &norm);
 	lis_matvec(A, x, temp_vec);
 	lis_vector_axpy(-1.0, temp_vec, b);
 	lis_vector_nrm2(b, &norm);

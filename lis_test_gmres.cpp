@@ -96,7 +96,7 @@ int main()
 	i32 *A_col;
 	i32 *A_row;
 	i32 nnz;
-	read_sparse_matrix_mm_format("../astroph_matrices/mcfe.mtx", n, n, A_val, A_col, A_row, nnz);
+	read_sparse_matrix_mm_format("../example_matrices/t2dal_e.mtx", n, n, A_val, A_col, A_row, nnz);
 
 	//std::cout << "nnz = " << nnz << std::endl;
 	//std::cout << "val[0] = " << A_val[0] << std::endl;
@@ -126,7 +126,7 @@ int main()
 	LIS_SOLVER solver;
 	lis_solver_create(&solver);
 	//lis_solver_set_optionC(solver);
-	std::string optstr = "-i cg -p none -maxiter 1000000";
+	std::string optstr = "-i gmres -p none -print all -restart 100 -maxiter 140000";
 	char *opt = new char[optstr.size() + 1]; 
 	opt[optstr.size()] = '\0';
 	strncpy(opt, optstr.c_str(), optstr.size());
@@ -139,7 +139,14 @@ int main()
 	//std::cout << "Solving system..." << std::endl;
 	lis_solve(A, b, x, solver);
 	//std::cout << "Solved system" << std::endl;
-	lis_vector_print(x);
 	
+	LIS_VECTOR temp_vec; lis_vector_create(0, &temp_vec);
+	lis_vector_set_size(temp_vec, 0, n);
+	real norm;
+	//lis_solver_get_residualnorm(solver, &norm);
+	lis_matvec(A, x, temp_vec);
+	lis_vector_axpy(-1.0, temp_vec, b);
+	lis_vector_nrm2(b, &norm);
+	std::cout << norm << std::endl;
 
 }

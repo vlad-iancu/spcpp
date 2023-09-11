@@ -335,12 +335,7 @@ lapacklstsq:
 			res = cblas_dnrm2(n, r0, 1);
 			cblas_dcopy(n, xm, 1, x, 1);
 			//print_vector("x", n, xm, 1);
-			std::cout << res << std::endl;
-			char c = getchar();
-			if(c == ' ')
-			{
-				break;
-			}
+			std::cout << "iteration = " << iter << " res = " << res << std::endl;
 			iter++;
 		} 
 		while(res > tol && iter < maxiter);

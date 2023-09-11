@@ -10,7 +10,7 @@ int main()
 	std::default_random_engine generator;
 	std::uniform_real_distribution<real> dist(0, 1e3);
 	i32 n = 1000;
-	i32 m = 50;
+	i32 m = 1000;
 	real *A = new real[n * n]();
 	real *b = new real[n]();
 	real *aux = new real[n]();

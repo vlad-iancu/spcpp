@@ -178,7 +178,7 @@ int main()
 	aoclsparse_optimize(A_mat);
 	real tol = 0.01;
 	i32 maxiter = 2000000;
-	i32 m = 700;
+	i32 m = 200;
 	cg_sparse(A_desc, A_mat, A_nnz, A_val, A_col, A_row, A_n, m, b, x, maxiter, tol);
 
 

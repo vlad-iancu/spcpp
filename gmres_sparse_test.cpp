@@ -196,16 +196,14 @@ int main()
 	i32 m = 30;
 	i32 nnz = 21;
 	//read_sparse_matrix_mm_format("../example_matrices/example.mtx",n, n, A_val, A_col, A_row, nnz);
-	read_sparse_matrix_mm_format("../example_matrices/thermal1.mtx", n, n, A_val, A_col, A_row, nnz);
 	std::ofstream fout("./spmat.txt");
+	/*
 	fout << n << " " << n << " " << nnz << std::endl;
 	//std::cout << n << " " << n << " " << nnz << std::endl;
-	/*
 	print_vector("A_val", nnz, A_val, 1);
 	print_vector("A_col", nnz, A_col, 1);
 	print_vector("A_row", n + 1, A_row, 1);
 	print_sparse_matrix("A", n, n, A_val, A_col, A_row);
-	*/
 	for(i32 i = 0; i < nnz; ++i)
 	{
 		fout << A_val[i] << " ";
@@ -221,42 +219,22 @@ int main()
 		fout << A_row[i] << " ";
 	}
 	fout << std::endl;
+	*/
+	read_sparse_matrix_mm_format("../example_matrices/consph.mtx", n, n, A_val, A_col, A_row, nnz);
 	real *b = new real[n];
 	//std::cout << "nnz = " << nnz << std::endl;
 	for(i32 i = 0; i < n; ++i)
 	{
 		b[i] = double(i + 1);
 	}
-	//print_vector("A_val", 10, A_val, 1);
-	//print_vector("A_col", 10, A_col, 1);
-	//print_vector("b", 10, b, 1);
-	//getchar();
 	aoclsparse_create_mat_descr(&A_desc);
 	aoclsparse_matrix A_mat;
 	aoclsparse_index_base base = aoclsparse_index_base::aoclsparse_index_base_zero;
 	aoclsparse_create_dcsr(A_mat, base, n, n, nnz, A_row, A_col, A_val);
-	//real *A_dense = new real[n * n]();
 	real *x = new real[n]();
 	//real x[10] = { 0.298839, 0.54889, 0.199792, 0.273519, 0.374394, 0.357441, 0.189931, 0.300435, 0.263805, 0.474547 };
-	/*
-	real x[10] = {
-		-328,
-     -274.75,
--5.31859e+16,
-        2195,
-          -6,
-         888,
-          80,
- 1.19668e+17,
-       -1278,
-       -9256,
-	};
-	*/
-	//aoclsparse_dcsr2dense(n, n, A_desc, A_val, A_row, A_col, A_dense, n, aoclsparse_order::aoclsparse_order_column);
-	//std::cout << "m = " << m << " n = " << n << std::endl;
-	//getchar();
 	i32 iter = 100000;
-	m = 600;
+	m = 100;
 	gmres_mgs_sparse(A_desc, A_mat, nnz, A_val, A_col, A_row, n, m , b, x, 0.01, iter);
 	std::cout << "Exited gmres" << std::endl;
 	std::ofstream solfile("./sol.txt");

@@ -162,7 +162,7 @@ void spcpp::gmres_householder_dense(real *A, real *b, i32 n, i32 m, real *x0, i3
 		cblas_dger(CblasColMajor, n, nnz, -2.0, w_, 1, w_nnz, 1, &P[n * j], n);
 		cblas_dcopy(n, &P[n * j], 1, v, 1); // theta(2 * n * (n - j) + n)
 		
-		if(j <= m)
+		if(j <= m - 1)
 		{
 			//x = matmul(P_, v)
 			//dgemv y := alpha * A * x + beta * y
